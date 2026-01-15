@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KO.S.A ERP</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Noto Sans KR", Segoe UI, Roboto, sans-serif;
+      background: #f6f7fb;
+      color: #111827;
+    }
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 20px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    main {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.06);
+      margin-bottom: 20px;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    ul {
+      padding-left: 18px;
+    }
+    li {
+      margin: 10px 0;
+      font-size: 15px;
+    }
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>KO.S.A ERP</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>📌 시스템 메뉴</h2>
+      <ul>
+        <li>
+          <a href="/admin.html">관리자 · 사용자 / 캠퍼스 권한 설정</a>
+          <div class="muted">Admin 전용 (스코프 관리)</div>
+        </li>
+        <li class="muted">
+          업무 관리(달력) · 준비 중
+        </li>
+        <li class="muted">
+          학생 관리 · 준비 중
+        </li>
+        <li class="muted">
+          출결 관리 · 준비 중
+        </li>
+        <li class="muted">
+          등록 관리 · 준비 중
+        </li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>ℹ️ 안내</h2>
+      <p class="muted">
+        이 페이지는 KO.S.A 전사 ERP 시스템의 메인 진입 화면입니다.<br/>
+        현재는 관리자 설정 기능부터 단계적으로 구축 중입니다.
+      </p>
+    </div>
+  </main>
+</body>
+</html>
