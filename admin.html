@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin · 사용자/캠퍼스 권한 설정</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; margin: 0; background:#f6f7fb; }
+    header { background:#111827; color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; }
+    header .title { font-weight:700; }
+    header .sub { opacity:.8; font-size:13px; }
+    main { max-width:1100px; margin: 18px auto; padding: 0 16px 40px; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; }
+    .card { background:#fff; border-radius:14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); padding:14px; }
+    .card h2 { margin:0 0 10px; font-size:16px; }
+    .left { flex: 1 1 420px; min-width: 340px; }
+    .right { flex: 1 1 520px; min-width: 360px; }
+    .muted { color:#6b7280; font-size:13px; }
+    .btn { border:0; border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:#111827; color:#fff; }
+    .btn.gray { background:#e5e7eb; color:#111827; }
+    .btn.danger { background:#ef4444; color:#fff; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #eef0f4; font-size:14px; }
+    th { font-size:12px; color:#6b7280; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+    tr:hover { background:#fafafa; }
+    .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+    .pill.admin { background:#fee2e2; color:#991b1b; }
+    .pill.manager { background:#dbeafe; color:#1e40af; }
+    .pill.staff { background:#dcfce7; color:#166534; }
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    label { display:block; font-size:12px; color:#6b7280; font-weight:700; margin:8px 0 6px; }
+    input, select { width:100%; padding:10px 11px; border:1px solid #e5e7eb; border-radius:10px; font-size:14px; background:#fff; }
+    .hint { font-size:12px; color:#6b7280; margin-top:6px; }
+    .scopeWrap { max-height:520px; overflow:auto; border:1px solid #eef0f4; border-radius:12px; padding:10px; background:#fbfbfe; }
+    .schoolBlock { border:1px solid #e5e7eb; border-radius:12px; padding:10px; background:#fff; margin-bottom:10px; }
+    .schoolHead { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .schoolTitle { font-weight:800; }
+    .campusList { margin-top:10px; padding-left:10px; display:grid; gap:6px; }
+    .campusItem { display:flex; align-items:center; gap:10px; font-size:14px; }
+    .topbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .status { margin-left:auto; font-size:13px; color:#6b7280; }
+    .warn { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:10px 12px; border-radius:12px; font-size:13px; margin-top:10px; }
+    .ok { background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46; padding:10px 12px; border-radius:12px; font-size:13px; margin-top:10px; }
+    code { background:#f3f4f6; padding:2px 6px; border-radius:8px; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div>
+    <div class="title">Admin · 사용자/캠퍼스 권한 설정</div>
+    <div class="sub">profiles / user_scopes 기반 · Admin 전사 무제한</div>
+  </div>
+  <div class="topbar">
+    <button class="btn gray" id="btnSignIn">로그인</button>
+    <button class="btn gray" id="btnSignOut" style="display:none;">로그아웃</button>
+  </div>
+</header>
+
+<main>
+  <div class="warn" id="banner">
+    🔒 이 페이지는 <b>admin</b>만 사용하세요. 먼저 로그인 후, Admin 권한이 확인되면 화면이 활성화됩니다.
+  </div>
+
+  <div class="row" style="margin-top:14px;">
+    <!-- LEFT: USERS -->
+    <section class="card left">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+        <h2>사용자 목록</h2>
+        <div class="status" id="me"></div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:10px;">
+        <div>
+          <label>검색(이름)</label>
+          <input id="qName" placeholder="예: 홍길동" />
+        </div>
+        <div>
+          <label>역할 필터</label>
+          <select id="qRole">
+            <option value="">전체</option>
+            <option value="admin">admin</option>
+            <option value="manager">manager</option>
+            <option value="staff">staff</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn primary" id="btnLoadUsers" disabled>사용자 불러오기</button>
+      <div class="hint">※ users 테이블이 아니라 <code>profiles</code>를 사용합니다.</div>
+
+      <div style="margin-top:12px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>역할</th>
+              <th>활성</th>
+              <th>담당 캠퍼스</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <tr><td colspan="5" class="muted">로그인 후 불러오기를 누르세요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ok" id="hintAdmin" style="display:none;">
+        ✅ Admin 확인됨. 사용자 선택 후 오른쪽에서 담당 캠퍼스를 체크하고 <b>저장</b>하세요.
+      </div>
+    </section>
+
+    <!-- RIGHT: SCOPES -->
+    <section class="card right">
+      <h2>담당 캠퍼스 설정</h2>
+      <div class="muted" id="selInfo">왼쪽에서 사용자를 선택하세요.</div>
+
+      <div style="margin-top:10px;" class="grid2">
+        <div>
+          <label>선택 사용자</label>
+          <input id="selUserName" disabled placeholder="사용자 선택 필요" />
+        </div>
+        <div>
+          <label>역할(role)</label>
+          <select id="selUserRole" disabled>
+            <option value="admin">admin</option>
+            <option value="manager">manager</option>
+            <option value="staff">staff</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>활성 여부</label>
+          <select id="selUserActive" disabled>
+            <option value="true">활성</option>
+            <option value="false">비활성</option>
+          </select>
+        </div>
+        <div>
+          <label>담당 캠퍼스 개수</label>
+          <input id="scopeCount" disabled />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+        <button class="btn gray" id="btnLoadScopes" disabled>캠퍼스 목록 불러오기</button>
+        <button class="btn primary" id="btnSaveScopes" disabled>저장</button>
+        <button class="btn danger" id="btnClearScopes" disabled>전부 해제</button>
+      </div>
+
+      <div class="hint">
+        - Admin은 전사 무제한이라 캠퍼스를 안 줘도 됩니다.<br/>
+        - Manager/Staff는 최소 1개 캠퍼스 지정 권장(0개면 아무 것도 못 봄).
+      </div>
+
+      <div style="margin-top:12px;" class="scopeWrap" id="scopeWrap">
+        <div class="muted">캠퍼스 목록을 불러오면 여기에 표시됩니다.</div>
+      </div>
+
+      <div id="msg"></div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  // 🔴 본인 값으로 변경
+  const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+  const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const $ = (id) => document.getElementById(id);
+
+  let me = null;           // { user_id, name, role }
+  let selectedUser = null; // { user_id, name, role, is_active }
+  let campusesBySchool = []; // [{school_id, school_name, campuses:[{campus_id,campus_name}]}]
+  let selectedCampusIds = new Set();
+
+  function pill(role) {
+    return `<span class="pill ${role}">${role}</span>`;
+  }
+
+  function setMsg(type, text) {
+    const box = $("msg");
+    if (!text) { box.innerHTML = ""; return; }
+    const cls = type === "ok" ? "ok" : "warn";
+    box.innerHTML = `<div class="${cls}">${text}</div>`;
+  }
+
+  async function ensureAdmin() {
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) {
+      $("me").textContent = "로그인 필요";
+      $("btnSignIn").style.display = "";
+      $("btnSignOut").style.display = "none";
+      disableAll();
+      return false;
+    }
+
+    // 내 profiles 확인
+    const { data: prof, error } = await supabase
+      .from("profiles")
+      .select("user_id,name,role,is_active")
+      .eq("user_id", sess.session.user.id)
+      .maybeSingle();
+
+    if (error || !prof) {
+      $("me").textContent = "profiles 없음/권한 없음";
+      disableAll();
+      return false;
+    }
+
+    me = prof;
+    $("me").innerHTML = `내 계정: <b>${me.name}</b> · ${pill(me.role)}`;
+    $("btnSignIn").style.display = "none";
+    $("btnSignOut").style.display = "";
+
+    const isAdmin = me.role === "admin";
+    if (!isAdmin) {
+      $("banner").innerHTML = `⛔ 이 계정은 admin이 아닙니다. 현재 role: <b>${me.role}</b>`;
+      disableAll();
+      return false;
+    }
+
+    $("banner").innerHTML = `✅ Admin 로그인 확인됨. 왼쪽에서 사용자를 선택하고, 오른쪽에서 담당 캠퍼스를 설정하세요.`;
+    $("hintAdmin").style.display = "";
+    $("btnLoadUsers").disabled = false;
+    return true;
+  }
+
+  function disableAll() {
+    $("btnLoadUsers").disabled = true;
+    $("btnLoadScopes").disabled = true;
+    $("btnSaveScopes").disabled = true;
+    $("btnClearScopes").disabled = true;
+    $("selUserRole").disabled = true;
+    $("selUserActive").disabled = true;
+  }
+
+  async function signIn() {
+    // 가장 단순: 이메일/비번 로그인 모달 없이 prompt로 처리(원하면 예쁜 UI로 개선 가능)
+    const email = prompt("Admin 이메일을 입력하세요:");
+    if (!email) return;
+    const password = prompt("비밀번호를 입력하세요:");
+    if (!password) return;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert("로그인 실패: " + error.message);
+    await ensureAdmin();
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    selectedUser = null;
+    campusesBySchool = [];
+    selectedCampusIds = new Set();
+    renderUsers([]);
+    renderScopeTree([]);
+    $("selUserName").value = "";
+    $("selUserRole").value = "staff";
+    $("selUserActive").value = "true";
+    $("scopeCount").value = "";
+    $("selInfo").textContent = "왼쪽에서 사용자를 선택하세요.";
+    setMsg("", "");
+    await ensureAdmin();
+  }
+
+  async function loadUsers() {
+    setMsg("", "");
+    const qName = $("qName").value.trim();
+    const qRole = $("qRole").value;
+
+    let query = supabase.from("profiles").select("user_id,name,role,is_active").order("name", { ascending: true });
+
+    if (qRole) query = query.eq("role", qRole);
+    if (qName) query = query.ilike("name", `%${qName}%`);
+
+    const { data, error } = await query;
+    if (error) { setMsg("warn", "사용자 불러오기 실패: " + error.message); return; }
+
+    // 담당 캠퍼스 수 계산: user_scopes count
+    // (간단하게 2번 호출; 규모 커지면 RPC/뷰로 최적화)
+    const ids = data.map(u => u.user_id);
+    let counts = new Map();
+    if (ids.length) {
+      const { data: scopes, error: e2 } = await supabase
+        .from("user_scopes")
+        .select("user_id,campus_id")
+        .in("user_id", ids);
+      if (!e2 && scopes) {
+        for (const s of scopes) counts.set(s.user_id, (counts.get(s.user_id) || 0) + 1);
+      }
+    }
+
+    renderUsers(data.map(u => ({...u, scope_count: counts.get(u.user_id) || 0 })));
+  }
+
+  function renderUsers(users) {
+    const tb = $("usersTbody");
+    if (!users.length) {
+      tb.innerHTML = `<tr><td colspan="5" class="muted">표시할 사용자가 없습니다.</td></tr>`;
+      return;
+    }
+    tb.innerHTML = users.map(u => `
+      <tr>
+        <td><b>${escapeHtml(u.name)}</b></td>
+        <td>${pill(u.role)}</td>
+        <td>${u.is_active ? "활성" : "<span class='muted'>비활성</span>"}</td>
+        <td>${u.scope_count ?? 0}</td>
+        <td><button class="btn gray" data-pick="${u.user_id}">선택</button></td>
+      </tr>
+    `).join("");
+
+    tb.querySelectorAll("button[data-pick]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-pick");
+        const u = users.find(x => x.user_id === id);
+        await pickUser(u);
+      });
+    });
+  }
+
+  async function pickUser(u) {
+    selectedUser = u;
+    $("selUserName").value = u.name;
+    $("selUserRole").value = u.role;
+    $("selUserActive").value = String(!!u.is_active);
+    $("selUserRole").disabled = false;
+    $("selUserActive").disabled = false;
+
+    $("btnLoadScopes").disabled = false;
+    $("btnSaveScopes").disabled = true;
+    $("btnClearScopes").disabled = true;
+
+    $("selInfo").innerHTML = `선택됨: <b>${escapeHtml(u.name)}</b> (${u.user_id})`;
+    setMsg("", "");
+
+    // 자동으로 캠퍼스 트리 로드 + 현재 스코프 표시
+    await loadCampusTreeIfNeeded();
+    await loadSelectedUserScopes();
+    updateScopeCount();
+    $("btnSaveScopes").disabled = false;
+    $("btnClearScopes").disabled = false;
+  }
+
+  async function loadCampusTreeIfNeeded() {
+    if (campusesBySchool.length) return;
+
+    // schools
+    const { data: schools, error: e1 } = await supabase
+      .from("schools")
+      .select("school_id,school_name,is_active")
+      .order("school_name", { ascending: true });
+
+    if (e1) { setMsg("warn", "schools 불러오기 실패: " + e1.message); return; }
+
+    // campuses
+    const { data: campuses, error: e2 } = await supabase
+      .from("campuses")
+      .select("campus_id,school_id,campus_name,is_active")
+      .order("campus_name", { ascending: true });
+
+    if (e2) { setMsg("warn", "campuses 불러오기 실패: " + e2.message); return; }
+
+    const map = new Map();
+    for (const s of schools) map.set(s.school_id, { ...s, campuses: [] });
+    for (const c of campuses) {
+      const entry = map.get(c.school_id);
+      if (entry) entry.campuses.push(c);
+    }
+    campusesBySchool = Array.from(map.values());
+
+    renderScopeTree(campusesBySchool);
+  }
+
+  function renderScopeTree(groups) {
+    const wrap = $("scopeWrap");
+    if (!groups.length) {
+      wrap.innerHTML = `<div class="muted">캠퍼스 데이터가 없습니다.</div>`;
+      return;
+    }
+
+    wrap.innerHTML = groups.map(s => {
+      const sid = s.school_id;
+      const schoolChecked = s.campuses.length && s.campuses.every(c => selectedCampusIds.has(c.campus_id));
+      const schoolIndet = s.campuses.some(c => selectedCampusIds.has(c.campus_id)) && !schoolChecked;
+
+      return `
+        <div class="schoolBlock" data-school="${sid}">
+          <div class="schoolHead">
+            <div class="schoolTitle">${escapeHtml(s.school_name)} ${s.is_active ? "" : "<span class='muted'>(비활성)</span>"}</div>
+            <label style="margin:0; display:flex; align-items:center; gap:8px; font-weight:700; color:#111827;">
+              <input type="checkbox" class="chkSchool" data-sid="${sid}" ${schoolChecked ? "checked": ""} />
+              학교 전체 선택
+            </label>
+          </div>
+
+          <div class="campusList">
+            ${s.campuses.map(c => `
+              <div class="campusItem">
+                <input type="checkbox" class="chkCampus" data-cid="${c.campus_id}" data-sid="${sid}" ${selectedCampusIds.has(c.campus_id) ? "checked": ""}/>
+                <div>${escapeHtml(c.campus_name)} ${c.is_active ? "" : "<span class='muted'>(비활성)</span>"}</div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // set indeterminate after render
+    wrap.querySelectorAll(".chkSchool").forEach(chk => {
+      const sid = chk.getAttribute("data-sid");
+      const school = groups.find(x => x.school_id === sid);
+      const checked = school.campuses.length && school.campuses.every(c => selectedCampusIds.has(c.campus_id));
+      const partial = school.campuses.some(c => selectedCampusIds.has(c.campus_id)) && !checked;
+      chk.indeterminate = partial;
+    });
+
+    wrap.querySelectorAll(".chkCampus").forEach(chk => {
+      chk.addEventListener("change", () => {
+        const cid = chk.getAttribute("data-cid");
+        if (chk.checked) selectedCampusIds.add(cid);
+        else selectedCampusIds.delete(cid);
+        renderScopeTree(campusesBySchool);
+        updateScopeCount();
+      });
+    });
+
+    wrap.querySelectorAll(".chkSchool").forEach(chk => {
+      chk.addEventListener("change", () => {
+        const sid = chk.getAttribute("data-sid");
+        const school = groups.find(x => x.school_id === sid);
+        for (const c of school.campuses) {
+          if (chk.checked) selectedCampusIds.add(c.campus_id);
+          else selectedCampusIds.delete(c.campus_id);
+        }
+        renderScopeTree(campusesBySchool);
+        updateScopeCount();
+      });
+    });
+  }
+
+  async function loadSelectedUserScopes() {
+    if (!selectedUser) return;
+    selectedCampusIds = new Set();
+
+    const { data, error } = await supabase
+      .from("user_scopes")
+      .select("campus_id")
+      .eq("user_id", selectedUser.user_id);
+
+    if (error) { setMsg("warn", "현재 스코프 불러오기 실패: " + error.message); return; }
+    for (const r of (data || [])) selectedCampusIds.add(r.campus_id);
+
+    renderScopeTree(campusesBySchool);
+    updateScopeCount();
+  }
+
+  function updateScopeCount() {
+    $("scopeCount").value = String(selectedCampusIds.size || 0);
+  }
+
+  async function saveUserMeta() {
+    if (!selectedUser) return;
+
+    const role = $("selUserRole").value;
+    const is_active = $("selUserActive").value === "true";
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ role, is_active })
+      .eq("user_id", selectedUser.user_id);
+
+    if (error) { setMsg("warn", "프로필 업데이트 실패: " + error.message); return false; }
+
+    // 로컬 상태 업데이트
+    selectedUser.role = role;
+    selectedUser.is_active = is_active;
+    return true;
+  }
+
+  async function saveScopes() {
+    if (!selectedUser) return;
+    setMsg("", "");
+
+    // 1) 프로필(role/활성) 저장
+    const okMeta = await saveUserMeta();
+    if (!okMeta) return;
+
+    // Admin은 전사 무제한이지만, 그래도 저장은 가능하게 둠(원하면 막아도 됨)
+    // 여기선 단순하게: 선택대로 user_scopes를 저장
+    const uid = selectedUser.user_id;
+
+    // 2) 기존 스코프 삭제
+    const { error: eDel } = await supabase
+      .from("user_scopes")
+      .delete()
+      .eq("user_id", uid);
+
+    if (eDel) { setMsg("warn", "기존 스코프 삭제 실패: " + eDel.message); return; }
+
+    // 3) 새 스코프 삽입
+    const rows = Array.from(selectedCampusIds).map(campus_id => ({
+      user_id: uid,
+      campus_id,
+      assigned_by: me.user_id
+    }));
+
+    if (rows.length) {
+      const { error: eIns } = await supabase
+        .from("user_scopes")
+        .insert(rows);
+
+      if (eIns) { setMsg("warn", "스코프 저장 실패: " + eIns.message); return; }
+    }
+
+    setMsg("ok", `✅ 저장 완료: ${escapeHtml(selectedUser.name)} (${selectedCampusIds.size}개 캠퍼스)`);
+    await loadUsers(); // 목록의 담당 캠퍼스 수 갱신
+  }
+
+  function clearScopes() {
+    selectedCampusIds = new Set();
+    renderScopeTree(campusesBySchool);
+    updateScopeCount();
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // EVENTS
+  $("btnSignIn").addEventListener("click", signIn);
+  $("btnSignOut").addEventListener("click", signOut);
+  $("btnLoadUsers").addEventListener("click", loadUsers);
+  $("btnLoadScopes").addEventListener("click", async () => {
+    await loadCampusTreeIfNeeded();
+    await loadSelectedUserScopes();
+    $("btnSaveScopes").disabled = false;
+    $("btnClearScopes").disabled = false;
+  });
+  $("btnSaveScopes").addEventListener("click", saveScopes);
+  $("btnClearScopes").addEventListener("click", () => { clearScopes(); setMsg("", ""); });
+
+  // Initial
+  await ensureAdmin();
+  supabase.auth.onAuthStateChange(async () => {
+    await ensureAdmin();
+  });
+</script>
+</body>
+</html>
