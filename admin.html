@@ -244,32 +244,18 @@
     $("selUserActive").disabled = true;
   }
 
-  async function signIn() {
-  const loginId = prompt("아이디(login_id)를 입력하세요:");
-  if (!loginId) return;
+  // 📍 GitHub admin.html에서 수정
+async function signIn() {
+  const email = prompt("이메일을 입력하세요:");
+  if (!email) return;
 
   const password = prompt("비밀번호를 입력하세요:");
   if (!password) return;
 
-  // login_id → email 매핑 조회
-  const { data, error } = await supabase
-    .from("login_map")
-    .select("email")
-    .eq("login_id", loginId)
-    .maybeSingle();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error || !data?.email) {
-    alert("아이디를 찾을 수 없습니다. (login_map 확인 필요)");
-    return;
-  }
-
-  const { error: err2 } = await supabase.auth.signInWithPassword({
-    email: data.email,
-    password
-  });
-
-  if (err2) {
-    alert("로그인 실패: " + err2.message);
+  if (error) {
+    alert("로그인 실패: " + error.message);
     return;
   }
 
